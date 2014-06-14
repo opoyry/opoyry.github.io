@@ -12,7 +12,8 @@ facebook: http://www.facebook.com
 linkedin: http://www.linkedin.com/pub/olli-p%C3%B6yry/1/37b/b0
 email: olli.poyry[at]essaim.fi
 location: 42Â°2'16"N   70Â°12'47"W
-disqus: diqus-username
+# diqus-username
+disqus: opoyry
 
 ##Make sure to edit the above fields, especially for disqus.
 
