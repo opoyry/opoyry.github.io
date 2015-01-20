@@ -1,0 +1,27 @@
+---
+layout: page
+:permalink: /page/
+excerpt: "Instructions on how to install and customize the Jekyll theme Minimal Mistakes."
+image:
+  //feature: sample-image-3.jpg
+  //feature: http://upload.wikimedia.org/wikipedia/commons/1/1f/Butterfly_on_the_Lavender_%285982214456%29.jpg
+  feature: Poisson_rouge_(variété_japonaise).jpg
+  
+  //feature: seamless-daisy-pattern-2330.png
+  //feature: symphony.png
+  //credit: WeGraphics
+  credit: By Sevann (Own work) [CC BY-SA 3.0 (http://creativecommons.org/licenses/by-sa/3.0)], via Wikimedia Commons
+  //creditlink: http://www.flickr.com/people/34120957@N04
+  creditlink: http://commons.wikimedia.org/wiki/File:Poisson_rouge_(vari%C3%A9t%C3%A9_japonaise).jpg
+  //creditlink: http://wegraphics.net/downloads/free-ultimate-blurred-background-pack/
+---
+
+== Sample Page
+
+This is a sample page composed in AsciiDoc.
+Jekyll converts it to HTML using http://asciidoctor.org[Asciidoctor].
+
+[source,ruby]
+----
+puts "Hello, World!"
+----
