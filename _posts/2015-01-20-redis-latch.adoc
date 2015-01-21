@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Using Redis pub/sub queue for providing feedback loop for asynchronous requests"
+title: "Using Redis pub/sub queue for providing feedback loop in asynchronous tests"
 excerpt: "Instructions on how use CountDownLatch and Redis pub/sub to have a feedback loop from an asynchronous request through ESB to an application"
 image:
   feature: Poisson_rouge_(variété_japonaise).jpg
