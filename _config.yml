@@ -20,7 +20,7 @@ gems:
 asciidoctor:
   attributes:
     - icons=font
-    - source-highlighter=coderay
+     #- source-highlighter=coderay
     - coderay-css=style
 
 kramdown:
