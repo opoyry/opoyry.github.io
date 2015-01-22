@@ -1,0 +1,455 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>Using Redis pub/sub queue for providing feedback loop in asynchronous tests &#8211; Essaim Apps Oy</title>
+<meta name="description" content="Instructions on how use CountDownLatch and Redis pub/sub to have a feedback loop from an asynchronous request through ESB to an application">
+<meta name="keywords" content="">
+
+
+
+<!-- Twitter Cards -->
+<meta name="twitter:title" content="Using Redis pub/sub queue for providing feedback loop in asynchronous tests">
+<meta name="twitter:description" content="Instructions on how use CountDownLatch and Redis pub/sub to have a feedback loop from an asynchronous request through ESB to an application">
+<meta name="twitter:site" content="@olli_poyry">
+<meta name="twitter:creator" content="@olli_poyry">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="/images/Poisson_rouge_(variété_japonaise).jpg">
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Using Redis pub/sub queue for providing feedback loop in asynchronous tests">
+<meta property="og:description" content="Instructions on how use CountDownLatch and Redis pub/sub to have a feedback loop from an asynchronous request through ESB to an application">
+<meta property="og:url" content="/redis-latch/">
+<meta property="og:site_name" content="Essaim Apps Oy">
+
+
+
+
+
+<link rel="canonical" href="/redis-latch/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Essaim Apps Oy Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.css">
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- HTML5 Shiv and Media Query Support -->
+<!--[if lt IE 9]>
+	<script src="/assets/js/vendor/html5shiv.min.js"></script>
+	<script src="/assets/js/vendor/respond.min.js"></script>
+<![endif]-->
+
+<!-- Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.7.1.custom.min.js"></script>
+
+<link href='//fonts.googleapis.com/css?family=PT+Sans+Narrow:400,700%7CPT+Serif:400,700,400italic' rel='stylesheet' type='text/css'>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+</head>
+
+<body class="post">
+
+<!--[if lt IE 9]><div class="browser-upgrade alert alert-info">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</div><![endif]-->
+
+<div class="navigation-wrapper">
+	<div class="site-name">
+		<a href="/"><img src="/images/essaim_apps_logo.jpg" width="300px" title="Essaim Apps Oy"  valign="center" /></a>
+	</div><!-- /.site-name -->
+	<div class="top-navigation">
+		<nav role="navigation" id="site-nav" class="nav">
+		    <ul>
+		        
+				    
+				        
+				    
+				    <li><a href="/about/" >About</a></li>
+				
+				    
+				        
+				    
+				    <li><a href="/posts/" >Blog</a></li>
+				
+		    </ul>
+		</nav>
+	</div><!-- /.top-navigation -->
+</div><!-- /.navigation-wrapper -->
+
+
+  <div class="image-wrap">
+  <img src=
+    
+      "/images/Poisson_rouge_(variété_japonaise).jpg"
+    
+  alt="Using Redis pub/sub queue for providing feedback loop in asynchronous tests feature image">
+  
+  </div><!-- /.image-wrap -->
+
+
+<div id="main" role="main">
+  <div class="article-author-side">
+    
+
+
+
+	<img src="/images/olli_poyry.jpg" class="bio-photo" alt="Olli Pöyry bio photo">
+
+<h3>Olli Pöyry</h3>
+<p>Software Architect, M.Sc. (Accounting and Finance)</p>
+<a href="mailto:olli.poyry@essaim.fi" class="author-social" target="_blank"><i class="fa fa-fw fa-envelope-square"></i> Email</a>
+<a href="http://twitter.com/olli_poyry" class="author-social" target="_blank"><i class="fa fa-fw fa-twitter-square"></i> Twitter</a>
+<a href="http://facebook.com/olli.poyry" class="author-social" target="_blank"><i class="fa fa-fw fa-facebook-square"></i> Facebook</a>
+
+<a href="http://linkedin.com/in/ollipoyry" class="author-social" target="_blank"><i class="fa fa-fw fa-linkedin-square"></i> LinkedIn</a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+  <article class="post">
+    <div class="headline-wrap">
+      
+        <h1><a href="/redis-latch/" rel="bookmark" title="Using Redis pub/sub queue for providing feedback loop in asynchronous tests">Using Redis pub/sub queue for providing feedback loop in asynchronous tests</a></h1>
+      
+    </div><!--/ .headline-wrap -->
+    <div class="article-wrap">
+      <div class="paragraph">
+<p>The code described below is able to provide a fast feedback loop from server back to client even when multiple threads are concurrently sending asynchronous requests.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>Each asynchronous request will embed a unique identifier that is passed back through a [Redis pub/sub queue](<a href="http://redis.io/topics/pubsub" class="bare">http://redis.io/topics/pubsub</a>)</p>
+</li>
+<li>
+<p>Spring bean <code><code>ResponseWaitUtil</code></code> spawns a background thread on the client side with a Redis pub/sub listener</p>
+</li>
+<li>
+<p><code><code>java.util.concurrent.CountDownLatch</code></code> is used to make the client thread wait for the response</p>
+</li>
+<li>
+<p><code><code>ResponseWaitUtil</code></code> bean contains a <code><code>ConcurrentHashMap</code></code> that maps each waiting request id to a corresponding <code><code>CountDownLatch</code></code></p>
+</li>
+<li>
+<p>As a response is received through the Redis queue the corresponding latch is freed</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">@Value("${wait.for.response.sec:30}")
+int waitForResponseSec;
+@Resource
+ResponseWaitUtil responseWaitUtil;
+
+
+final String requestId = testUtil.getNextBusinessId();
+CountDownLatch countDownLatch = responseWaitUtil.addLatchForRequest(requestId);
+sampleResult.sampleStart(); // Apache JMeter start timer
+
+
+// Execute ASYNC call e.g. something like:
+executeUpload(uploadRequest, requestId);
+
+
+LOG.debug("Waiting {} seconds for response from backend on Redis pub/sub channel {}, Redis URL {}...",
+waitForResponseSec, ResponseWaitUtil.REDIS_CHANNEL_NAME, responseWaitUtil.getRedisUrl());
+if (countDownLatch.await(waitForResponseSec, TimeUnit.SECONDS)) {
+sampleResult.sampleEnd(); // Apache JMeter stop timer
+...
+} else {
+sampleResult.setSuccessful(false);
+...
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Before sending an asynchronous request a <code><code>CountDownLatch</code></code> is created and added to the map <code><code>mapRequestIdToLatch</code></code>. After receiving a response through the queue the <code><code>JedisPubSub</code></code> listener defined in <code><code>ResponseWaitUtil</code></code> executes <code><code>countDown()</code></code> on the latch mapped to the request id received through the queue.</p>
+</div>
+<div class="paragraph">
+<p>What happens if the feedback loop from server is lightning fast and the latch is freed before the client program gets into <code><code>countDownLatch.await</code></code>? No worries - then the program will just continue with no wait.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">@Component
+public class ResponseWaitUtil {
+
+
+@Value("${redis.url:localhost}")
+String redisUrl;
+
+
+public static final String REDIS_CHANNEL_NAME = ResponseWaitUtil.class.getName();
+
+
+Map&lt;String, CountDownLatch&gt; mapRequestIdToLatch = new ConcurrentHashMap&lt;String, CountDownLatch&gt;();
+
+
+public CountDownLatch addLatchForRequest(String requestId) {
+CountDownLatch countDownLatch = new CountDownLatch(1);
+mapRequestIdToLatch.put(requestId, countDownLatch);
+return countDownLatch;
+}
+
+
+final JedisPubSub jedisPubSub = new JedisPubSub() {
+
+
+@Override
+public void onMessage(String channel, String message) {
+if (StringUtils.equals(channel, REDIS_CHANNEL_NAME)) {
+String requestId = StringUtils.substringBefore(message, "+");
+CountDownLatch countDownLatch = mapRequestIdToLatch.get(requestId);
+if (countDownLatch != null) {
+LOG.info("Redis pub/sub onMessage got message {}, continue thread", message);
+mapRequestIdToLatch.remove(requestId);
+if (StringUtils.contains(message, "+")) {
+mapRequestIdToMessage.put(requestId, message);
+}
+countDownLatch.countDown();
+} else {
+LOG.warn("SYSTEM ERROR latch not found for request id {}, mapRequestIdToLatch keyset {}", message, mapRequestIdToLatch.keySet());
+}
+}
+}
+};</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The pub/sub listener in <code><code>ResponseWaitUtil</code></code> is spawned as a background thread in the client before executing any asynchronous requests.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">ExecutorService executor;
+Future future;
+
+
+public synchronized void init() {
+if (future == null) {
+LOG.debug("Start background thread for getting responses from backend through Redis");
+executor = Executors.newFixedThreadPool(1);
+future = executor.submit(redisListenerTask);
+}
+}
+
+
+public synchronized void destroy() {
+if (future != null) {
+try {
+jedisPubSub.unsubscribe();
+executor.shutdownNow();
+future = null;
+executor = null;
+LOG.debug("Background thread for getting responses through Redis closed");
+} catch (Exception ex) {
+LOG.error("Error in destroying Redis listener", ex);
+}
+}
+}
+
+
+class RedisListenerTask implements Runnable {
+
+
+public void run() {
+Jedis jedis = null;
+try {
+jedis = new Jedis(redisUrl);
+jedis.subscribe(jedisPubSub, REDIS_CHANNEL_NAME);
+} catch (Exception ex) {
+LOG.error("Error", ex);
+} finally {
+if (jedis != null)
+jedis.quit();
+jedis = null;
+}
+}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>The unique id for the asynchronous request is built up using a resource (e.g. Spring bean) with a counter value as part of the returned request id string.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">static String receiverBeginning = "FI" + RandomStringUtils.randomNumeric(3);
+static String businessIdPostfix = RandomStringUtils.randomNumeric(1);
+
+
+public String getNextBusinessId() {
+int counterValue = businessIdCounter.incrementAndGet();
+return receiverBeginning + StringUtils.leftPad(String.valueOf(counterValue), 4, "0") + businessIdPostfix;
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Request id could as well be generated with something like <code>UUID.randomUUID().toString()</code></p>
+</div>
+<div class="paragraph">
+<p>On the server side the service responding to the asynchronous request picks the Redis host name and pub/sub queue name from the message having embedded a string like below somewhere in the request:</p>
+</div>
+<div class="paragraph">
+<p><code>&lt;ns2:StreetName&gt;[CALLBACK REDIS:localhost:ResponseWaitUtil:FI68400018]&lt;/ns2:StreetName&gt;</code></p>
+</div>
+<div class="paragraph">
+<p>Notice that the host name or host and port combination for Redis is provided in the request, thus it does not need to be configured on the server side. Also the name of the pub/sub queue used is embedded in the callback string.</p>
+</div>
+<div class="paragraph">
+<p>Depending on the service some additional information may be sent to the client by appending a string after a separator character (here +), for instance a database primary key generated in the service.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">String restAddressToCallback = StringUtils.substringBetween(requestMessage, "[CALLBACK ", "]");
+executeRedisPub(restAddressToCallback + (databaseId != null ? "+" + databaseId : ""));
+
+
+public void executeRedisPub(String url) throws Exception {
+Jedis jedis = null;
+try {
+String arr[] = StringUtils.split(url, ":");
+if (arr.length != 4)
+throw new Exception("SYSTEM ERROR, callback URL for Redis should be of format REDIS:host:topic:requestid, erroneous url was" + url);
+jedis = new Jedis(arr[1]);
+jedis.publish(arr[2], arr[3]);
+LOG.debug("&gt;&gt;Publish request id {} to Redis on host {} using topic {}", arr[3], arr[1], arr[2]);
+} finally {
+if (jedis != null)
+jedis.quit();
+}
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><strong>JedisPubSub</strong> <strong>onMessage</strong> listener in <code><code>ResponseWaitUtil</code></code> adds responses with any extra information to a <code><code>ConcurrentHashMap</code></code> where it can be queried. <code><code>getMessageByRequestId</code></code> below has a side effect of removing the entry on query. The actual payload (e.g. database row id) of the returned extra information can be extracted with <code><code>StringUtils.substringAfter(message, "+");.</code></code></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">Map&lt;String, String&gt; mapRequestIdToMessage = new ConcurrentHashMap&lt;String, String&gt;();
+
+
+// Populate map in JedisPubSub onMessage:
+if (StringUtils.contains(message, "+")) {
+mapRequestIdToMessage.put(requestId, message);
+}
+
+
+public String getMessageByRequestId(String requestId) {
+return mapRequestIdToMessage.remove(requestId);
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>Redis pub/sub queue is faster and easier to configure as a feedback channel than alternatives like JMS or a http connection as the flow is from server side to the client.</p>
+</div>
+      <hr />
+      <footer role="contentinfo">
+        <div class="article-author-bottom">
+          
+
+
+
+	<img src="/images/olli_poyry.jpg" class="bio-photo" alt="Olli Pöyry bio photo">
+
+<h3>Olli Pöyry</h3>
+<p>Software Architect, M.Sc. (Accounting and Finance)</p>
+<a href="mailto:olli.poyry@essaim.fi" class="author-social" target="_blank"><i class="fa fa-fw fa-envelope-square"></i> Email</a>
+<a href="http://twitter.com/olli_poyry" class="author-social" target="_blank"><i class="fa fa-fw fa-twitter-square"></i> Twitter</a>
+<a href="http://facebook.com/olli.poyry" class="author-social" target="_blank"><i class="fa fa-fw fa-facebook-square"></i> Facebook</a>
+
+<a href="http://linkedin.com/in/ollipoyry" class="author-social" target="_blank"><i class="fa fa-fw fa-linkedin-square"></i> LinkedIn</a>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        </div>
+        <p class="byline"><strong>Using Redis pub/sub queue for providing feedback loop in asynchronous tests</strong> was published on <time datetime="2015-01-20T00:00:00+02:00">January 20, 2015</time>.</p>
+      </footer>
+    </div><!-- /.article-wrap -->
+  
+  </article>
+</div><!-- /#main -->
+
+<div class="footer-wrap">
+  <div class="related-articles">
+  <h4>You might also enjoy <small class="pull-right">(<a href="/posts/">View all posts</a>)</small></h4>
+    <ul>
+    
+      <li><a href="/jekyll/testing/What-do-we-do-anyway/" title="What do we do, anyway?">What do we do, anyway?</a></li>
+    
+      <li><a href="/Samples/" title="Samples">Samples</a></li>
+    
+      <li><a href="/jekyll/update/welcome-to-jekyll/" title="Welcome to Jekyll!">Welcome to Jekyll!</a></li>
+    
+    </ul>
+    <hr />
+  </div><!-- /.related-articles -->
+  <footer>
+    
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+  ga('create', 'UA-47380882-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
+<span>&copy; 2015 Essaim Apps Oy. Powered by <a href="http://jekyllrb.com" rel="nofollow">Jekyll</a> using the <a href="http://mademistakes.com/minimal-mistakes/" rel="nofollow">Minimal Mistakes</a> theme.</span>
+
+  </footer>
+</div><!-- /.footer-wrap -->
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+
+	        
+
+</body>
+</html>
