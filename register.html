@@ -154,7 +154,7 @@
             <div class="alert alert-success message-animation" role="alert" ng-if="ctrl.showSubmittedPrompt">
                 Thank you! Your account has been created.
             </div>
-            <form name="ctrl.signupForm" ng-submit="ctrl.signup()" novalidate>
+            <form name="ctrl.signupForm" ng-submit="ctrl.signup()" action="http://essaim.dnsalias.net/register/submit" novalidate>
                 <div class="form-group" ng-class="{'has-error':ctrl.hasErrorClass('email')}">
                     <label for="email">Email</label>
                     <input id="email" name="email" class="form-control" type="email" required
