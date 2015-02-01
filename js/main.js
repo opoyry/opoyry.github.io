@@ -11,8 +11,8 @@ angular.module('ngMailChimp', ['ngAria', 'ngMessages', 'ngAnimate'])
         var signup = function () {
             if( ctrl.signupForm.$valid) {
 
-document.ctrl.signupForm.action = 'http://essaim.dnsalias.net/register/submit';
-document.ctrl.signupForm.submit();
+ctrl.signupForm.action = 'http://essaim.dnsalias.net/register/submit';
+ctrl.signupForm.submit();
 /*
 var USERNAME="reguser";
 var PASSWORD="AasiIhaa";
