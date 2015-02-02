@@ -25,14 +25,14 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="Register for our newsletter!">
 
-<meta property="og:url" content="/register.html">
+<meta property="og:url" content="/register2.html">
 <meta property="og:site_name" content="Essaim Apps Oy">
 
 
 
 
 
-<link rel="canonical" href="/register.html">
+<link rel="canonical" href="/register2.html">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="Essaim Apps Oy Feed">
 
 
@@ -145,9 +145,66 @@
   <article class="page">
     <h1>Register for our newsletter!</h1>
     <div class="article-wrap">
-      <!-- http://essaim.dnsalias.net/register-->
+      <script>
 
-<iframe width="640" height="360" src="http://localhost:8091/register" frameborder="0" allowfullscreen></iframe>
+ // When the browser is ready...
+  $(function() {
+  
+    // Setup form validation on the #register-form element
+    $("#register-form").validate({
+    
+        // Specify the validation rules
+        rules: {
+            firstname: "required",
+            lastname: "required",
+            email: {
+                required: true,
+                email: true
+            },
+            password: {
+                required: true,
+                minlength: 5
+            },
+            agree: "required"
+        },
+        
+        // Specify the validation error messages
+        messages: {
+            firstname: "Please enter your first name",
+            lastname: "Please enter your last name",
+            password: {
+                required: "Please provide a password",
+                minlength: "Your password must be at least 5 characters long"
+            },
+            email: "Please enter a valid email address",
+            agree: "Please accept our policy"
+        },
+        
+        submitHandler: function(form) {
+            form.submit();
+        }
+    });
+
+  });
+  
+  </script>
+
+  <h1>Register here</h1>
+
+  <!--  The form that will be parsed by jQuery before submit  -->
+  <!--
+  <form action="http://essaim.dnsalias.net/register/submit" method="post" id="register-form" novalidate="novalidate">
+  -->
+  <form action="http://localhost:8090/register/submit" method="post" id="register-form" novalidate="novalidate">
+  
+    <div class="label">First Name</div><input type="text" id="firstname" name="firstname" /><br />
+    <div class="label">Last Name</div><input type="text" id="lastname" name="lastname" /><br />
+    <div class="label">Email</div><input type="text" id="email" name="email" /><br />
+    <div class="label">Password</div><input type="password" id="password" name="password" /><br />
+    <div style="margin-left:140px;"><input type="submit" name="submit" value="Submit" /></div>
+    
+  </form>
+
 
     </div><!-- /.article-wrap -->
     
