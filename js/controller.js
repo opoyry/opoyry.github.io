@@ -10,8 +10,9 @@ window.onload = function() {
 		// Prevent any default browser behaviour.
 		e.preventDefault();
 
-		// Send a message with the text 'Hello Treehouse!' to the receiver window.
-		receiver.postMessage('Hello Treehouse!', 'http://www2.essaim.fi');
+		var theObject = { property1 : "hello", property2 : "world" };
+		var message = JSON.stringify(theObject);
+		receiver.postMessage(message, 'http://www2.essaim.fi');
 	}
 
 	// Add an event listener that will execute the sendMessage() function
